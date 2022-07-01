@@ -1,0 +1,11 @@
+.stack-work/
+.idea
+*~
+
+dist-newstyle/
+dist-newstyle-build-no-code/
+
+.direnv/
+
+*.debug
+.debug.*
