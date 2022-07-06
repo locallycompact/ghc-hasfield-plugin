@@ -8,15 +8,13 @@ library
       src
   exposed-modules:
       Nau.Plugin.ViewPattern
-      Nau.Plugin.NamingT
       Nau.Plugin.Shim
   build-depends:
       base             >= 4.13   && < 4.17
     , containers       >= 0.6.2  && < 0.7
     , mtl              >= 2.2.1  && < 2.3
     , primitive        >= 0.7    && < 0.8
-    , record-hasfield  >= 1.0    && < 1.1
-    , syb              >= 0.7    && < 0.8
+    , uniplate 
     , ghc
     , template-haskell
 
@@ -29,7 +27,13 @@ test-suite test
       test
   main-is:
       PluginTest.hs
+  other-modules:
+      TestTypes
+      Unused
   build-depends:
       base             >= 4.13   && < 4.17
-    , record-hasfield
+    , record-hasfield  >= 1.0    && < 1.1
+    , tasty
+    , tasty-hunit
+    , record-dot-preprocessor
     , ghc-hasfield-plugin

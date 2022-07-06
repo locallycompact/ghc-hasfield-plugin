@@ -39,10 +39,6 @@ module Nau.Plugin.Shim (
   , hsTyVarLName
   , setDefaultSpecificity
 
-    -- * New functionality
-  , compareHs
-  , InheritLoc(..)
-
     -- * Re-exports
 
     -- The whole-sale module exports are not ideal for preserving compatibility
@@ -69,7 +65,6 @@ module Nau.Plugin.Shim (
   ) where
 
 import Data.List.NonEmpty (NonEmpty(..))
-import Data.Generics (Data, GenericQ, cast, toConstr, gzipWithQ)
 
 import qualified Data.List.NonEmpty as NE
 
@@ -245,81 +240,6 @@ setDefaultSpecificity (L l v) = L l $ case v of
     KindedTyVar ext () name kind -> KindedTyVar ext SpecifiedSpec name kind
     XTyVarBndr  ext              -> XTyVarBndr  ext
 #endif
-
-{-------------------------------------------------------------------------------
-  New functionality
--------------------------------------------------------------------------------}
-
--- | Generic comparison for (parts of) the AST
---
--- NOTE: Not all abstract types are given special treatment here; in particular,
--- types only used in type-checked code ignored. To extend/audit this function,
--- grep the @ghc@ source for @abstractConstr@. Without further extensions,
--- all values of these types are considered equal.
---
--- NOTE: Although @ghc@ declares the constructor of @Bag@ as abstract as well,
--- we don't actually need a special case here: the constructors will be
--- considered equal, but 'gfoldl' will traverse the /elements/ of the @Bag@
--- nonetheless, which is precisely what we want.
-compareHs' :: GenericQ (GenericQ Bool)
-compareHs' x y
-    | (Just x', Just y') <- (cast x, cast y) = (==) @ConLike     x' y'
-    | (Just x', Just y') <- (cast x, cast y) = (==) @PatSyn      x' y'
-    | (Just x', Just y') <- (cast x, cast y) = (==) @Class       x' y'
-    | (Just x', Just y') <- (cast x, cast y) = (==) @DataCon     x' y'
-    | (Just x', Just y') <- (cast x, cast y) = (==) @FastString  x' y'
-    | (Just x', Just y') <- (cast x, cast y) = (==) @Module      x' y'
-    | (Just x', Just y') <- (cast x, cast y) = (==) @ModuleName  x' y'
-    | (Just x', Just y') <- (cast x, cast y) = (==) @Name        x' y'
-    | (Just x', Just y') <- (cast x, cast y) = (==) @OccName     x' y'
-    | (Just x', Just y') <- (cast x, cast y) = (==) @TyCon       x' y'
-    | (Just x', Just y') <- (cast x, cast y) = (==) @UnitId      x' y'
-    | (Just x', Just y') <- (cast x, cast y) = (==) @Var         x' y'
-#if __GLASGOW_HASKELL__ >= 900
-    | (Just x', Just y') <- (cast x, cast y) = (==) @Unit        x' y'
-#endif
-    | (Just x', Just y') <- (cast x, cast y) = ignr @RealSrcSpan x' y'
-    | (Just x', Just y') <- (cast x, cast y) = ignr @SrcSpan     x' y'
-    | otherwise = (toConstr x == toConstr y)
-               && and (gzipWithQ compareHs' x y)
-  where
-    ignr :: a -> a -> Bool
-    ignr _ _ = True
-
--- | Compare two (parts) of a Haskell source tree for equality
---
--- The trees are compared for literal equality, but 'SrcSpan's are ignored.
-compareHs :: Data a => a -> a -> Bool
-compareHs x y = compareHs' x y
-
-{-------------------------------------------------------------------------------
-  Working with locations
--------------------------------------------------------------------------------}
-
-class InheritLoc a b lb | lb -> b where
-  inheritLoc :: a -> b -> lb
-
-instance InheritLoc (Located a) b (Located b) where
-  inheritLoc (L l _) = L l
-
-instance InheritLoc a b lb => InheritLoc (NonEmpty a) b lb where
-  inheritLoc = inheritLoc . NE.head
-
--- | The instance for @[]@ is not ideal: we use 'noLoc' if the list is empty
---
--- For the use cases in this library, this is acceptable: typically these are
--- lists with elements for the record fields, and having slightly poorer error
--- messages for highly unusual "empty large" records is fine.
-instance InheritLoc a b (Located b) => InheritLoc [a] b (Located b) where
-  inheritLoc (a:_) = inheritLoc a
-  inheritLoc []    = noLoc
-
-#if __GLASGOW_HASKELL__ < 810
--- In 8.8, 'LPat' is a synonym for 'Pat'
-instance InheritLoc a (Pat p) (LPat p) where
-  inheritLoc _ = id
-#endif
-
 
 patLoc :: SrcSpan -> Pat (GhcPass id) -> LPat (GhcPass id)
 #if __GLASGOW_HASKELL__ >= 810 && __GLASGOW_HASKELL__ <= 920

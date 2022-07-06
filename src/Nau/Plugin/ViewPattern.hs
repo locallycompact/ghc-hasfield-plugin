@@ -2,9 +2,10 @@
 {-# LANGUAGE LambdaCase #-}
 module Nau.Plugin.ViewPattern (plugin) where
 
-import Data.Generics (everywhereM, mkM)    
-import Nau.Plugin.Shim 
-import Nau.Plugin.NamingT
+import Data.Generics.Uniplate.Data
+import Data.Monoid
+import Control.Monad.Writer
+import Nau.Plugin.Shim
 
 -- for check required extensions
 import Control.Monad.Except
@@ -32,12 +33,12 @@ plugin = defaultPlugin {
                    , hsmodImports = imports
                    } } = do
       checkEnabledExtensions l                
-      (decls', modls) <- runNamingHsc $ everywhereM (mkM transformPat) decls
+      let (decls', needImports) = runWriter $ transformBiM transformPat decls
+      let modls = if getAny needImports then [importDecl ghcRecordsCompat True] else []
       return $ parsed {
         hpm_module = L l $ modl {
             hsmodDecls   = decls'
-          , hsmodImports = imports -- ++ modls
---          , hsmodImports = imports ++ map (importDecl True) modls
+          , hsmodImports = imports ++ modls
           }
         }
 
@@ -45,7 +46,7 @@ plugin = defaultPlugin {
   Main translation
 -------------------------------------------------------------------------------}
 
-transformPat :: LPat GhcPs -> NamingT Hsc (LPat GhcPs)
+transformPat :: LPat GhcPs -> Writer Any (LPat GhcPs)
 transformPat p
   | Just (L l nm, RecCon (HsRecFields flds dotdot)) <- viewConPat p
   , Unqual nm' <- nm
@@ -59,30 +60,36 @@ transformPat p
 mkRecPat ::
      SrcSpan
   -> [(FastString, LPat GhcPs)]
-  -> NamingT Hsc (LPat GhcPs)
+  -> Writer Any (LPat GhcPs)
 mkRecPat l = \case
   [] -> do
       return (patLoc l (BangPat defExt (WildPat defExt)))
   [(f, p)] -> do
-    x <- freshVar l "x" 
+    doImport
     return (patLoc l (ViewPat defExt (mkGetField f) p))
   fields -> do
-    x <- freshVar l "x" 
+    doImport  
+    let x  = mkRdrUnqual $ mkVarOcc "x"
     let getFieldsTuple = simpleLam x (mkTuple [mkGetField f `mkHsApp` mkVar l x | (f, _) <- fields])
     let patsTuple = TuplePat defExt [p | (_, p) <- fields] Boxed
     return (patLoc l (ViewPat defExt getFieldsTuple (patLoc l patsTuple)))
   where
+    doImport :: Writer Any ()
+    doImport = tell (Any True)
+
     mkGetField :: FastString -> LHsExpr GhcPs
     mkGetField fieldName =
       mkVar l getField' `mkAppType` mkSelector fieldName
 
-    getField' = mkRdrQual (mkModuleName "GHC.Records.Compat") $ mkVarOcc "getField"
+    getField' = mkRdrQual ghcRecordsCompat $ mkVarOcc "getField"
 
     mkSelector :: FastString -> LHsType GhcPs
     mkSelector = litT . HsStrTy NoSourceText 
 
     mkTuple :: [LHsExpr GhcPs] -> LHsExpr GhcPs
     mkTuple xs = L l (ExplicitTuple defExt [L l (Present defExt x) | x <- xs] Boxed)
+
+ghcRecordsCompat = mkModuleName "GHC.Records.Compat"
 
 getFieldSel :: LHsRecField GhcPs (LPat GhcPs) -> Maybe (FastString, LPat GhcPs)
 getFieldSel (L _ (HsRecField (L _ fieldOcc) arg pun))
