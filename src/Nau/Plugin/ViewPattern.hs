@@ -52,10 +52,16 @@ transformPat p
   , Unqual nm' <- nm
   , Nothing    <- dotdot
   , Just flds' <- mapM getFieldSel flds
+  , True <- parseAnon (occNameString nm')
   =  mkRecPat l flds'
 
   | otherwise
   = return p
+
+parseAnon :: String -> Bool
+parseAnon "ANON" = True
+parseAnon "ANON_F" = True
+parseAnon _ = False
 
 mkRecPat ::
      SrcSpan
