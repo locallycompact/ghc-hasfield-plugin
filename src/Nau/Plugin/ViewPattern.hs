@@ -69,7 +69,7 @@ mkRecPat ::
   -> Writer Any (LPat GhcPs)
 mkRecPat l = \case
   [] -> do
-      return (patLoc l (BangPat defExt (WildPat defExt)))
+      return (patLoc l (BangPat defExt (L l (WildPat defExt))))
   [(f, p)] -> do
     doImport
     return (patLoc l (ViewPat defExt (mkGetField f) p))
