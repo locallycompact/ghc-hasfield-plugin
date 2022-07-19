@@ -4,7 +4,7 @@ module Nau.Plugin.ViewPattern (plugin) where
 
 import Data.Generics.Uniplate.Data
 import Data.Monoid
-import Control.Monad.Writer
+import Control.Monad.Trans.Writer.CPS
 import Nau.Plugin.Shim
 
 -- for check required extensions
@@ -52,7 +52,7 @@ transformPat p
   , Unqual nm' <- nm
   , Nothing    <- dotdot
   , Just flds' <- mapM getFieldSel flds
-  , True <- parseRec (occNameString nm')
+  , parseRec (occNameString nm')
   =  mkRecPat l flds'
 
   | otherwise
