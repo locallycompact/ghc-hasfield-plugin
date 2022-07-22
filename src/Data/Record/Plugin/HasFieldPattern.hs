@@ -1,11 +1,11 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
-module Nau.Plugin.ViewPattern (plugin) where
+module Data.Record.Plugin.HasFieldPattern (plugin) where
 
 import Data.Generics.Uniplate.Data
 import Data.Monoid
 import Control.Monad.Trans.Writer.CPS
-import Nau.Plugin.Shim
+import Data.Record.Plugin.Shim
 
 -- for check required extensions
 import Control.Monad.Except

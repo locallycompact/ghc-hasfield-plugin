@@ -12,7 +12,7 @@
 --
 -- This should be the only module with GHC-specific CPP directives, and the
 -- rest of the plugin should not import from any GHC modules directly.
-module Nau.Plugin.Shim (
+module Data.Record.Plugin.Shim (
     -- * Miscellaneous
     importDecl
   , conPat
