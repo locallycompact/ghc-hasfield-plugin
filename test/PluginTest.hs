@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fplugin=Nau.Plugin.ViewPattern -ddump-parsed-ast -ddump-rn #-}
+{-# OPTIONS_GHC -fplugin=Data.Record.Plugin.HasFieldPattern -ddump-parsed-ast -ddump-rn #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ViewPatterns #-}

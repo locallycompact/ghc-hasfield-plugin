@@ -7,8 +7,9 @@ library
   hs-source-dirs:
       src
   exposed-modules:
-      Nau.Plugin.ViewPattern
-      Nau.Plugin.Shim
+      Data.Record.Plugin.HasFieldPattern
+  other-modules:
+      Data.Record.Plugin.Shim
   build-depends:
       base             >= 4.13   && < 4.17
     , containers       >= 0.6.2  && < 0.7

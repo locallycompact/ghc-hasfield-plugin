@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fplugin=Nau.Plugin.ViewPattern -Werror -Wno-unused-imports #-}
+{-# OPTIONS_GHC -fplugin=Data.Record.Plugin.HasFieldPattern -Werror -Wno-unused-imports #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeApplications #-}
