@@ -4,14 +4,15 @@ This plugin rewrite code like
 
 ```haskell
 func :: Record -> Int
-func Record{field1 = f1, field2 = f2} = f1 + f2
+func REC {field1 = f1, field2 = f2} = f1 + f2
 ```
+(where REC is a "magic" keyword)
 
 into
 
 ```haskell
 func :: Record -> Int
-func ((\x -> (GHC.Records.Compat.getField @"field1" x, GHC.Records.Compat.getField @"field2" x) -> (f1, f2)
+func ((\x -> (GHC.Records.Compat.getField @"field1" x, GHC.Records.Compat.getField @"field2" x) -> (f1, f2)))
   = f1 + f2
 ```
 
