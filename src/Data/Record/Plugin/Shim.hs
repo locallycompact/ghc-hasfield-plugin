@@ -29,10 +29,8 @@ module Data.Record.Plugin.Shim (
   , HasDefaultExt(..)
 
     -- * Generalized @forall@
-#if __GLASGOW_HASKELL__ >= 900
   , HsTyVarBndr
   , LHsTyVarBndr
-#endif
   , hsFunTy
   , userTyVar
   , kindedTyVar
@@ -43,16 +41,6 @@ module Data.Record.Plugin.Shim (
 
     -- The whole-sale module exports are not ideal for preserving compatibility
     -- across ghc versions, but we'll deal with this on a case by case basis.
-#if __GLASGOW_HASKELL__ < 900
-  , module Bag
-  , module BasicTypes
-  , module ErrUtils
-  , module GHC
-  , module GhcPlugins
-  , module HscMain
-  , module NameCache
-  , module TcEvidence
-#else
   , module GHC.Data.Bag
   , module GHC.Driver.Main
   , module GHC.Hs
@@ -61,30 +49,11 @@ module Data.Record.Plugin.Shim (
   , module GHC.Types.Basic
   , module GHC.Types.Name.Cache
   , module GHC.Utils.Error
-#endif
   ) where
 
 import Data.List.NonEmpty (NonEmpty(..))
 
 import qualified Data.List.NonEmpty as NE
-
-#if __GLASGOW_HASKELL__ < 900
-
-import Bag (listToBag, emptyBag)
-import BasicTypes (SourceText(NoSourceText))
-import ConLike (ConLike)
-import ErrUtils (mkErrMsg, mkWarnMsg)
-import GHC hiding (AnnKeywordId(..), HsModule, exprType, typeKind, mkFunBind)
-import GhcPlugins hiding ((<>), getHscEnv, putLogMsg)
-import HscMain (getHscEnv)
-import NameCache (NameCache(nsUniqs))
-import PatSyn (PatSyn)
-import TcEvidence (HsWrapper(WpHole))
-
-import qualified GHC
-import qualified GhcPlugins as GHC
-
-#else
 
 import GHC.Core.Class (Class)
 import GHC.Core.ConLike (ConLike)
@@ -95,14 +64,13 @@ import GHC.Hs hiding (LHsTyVarBndr, HsTyVarBndr, HsModule, mkFunBind)
 import GHC.Parser.Annotation (IsUnicodeSyntax(NormalSyntax))
 import GHC.Plugins hiding ((<>), getHscEnv, putLogMsg)
 import GHC.Tc.Types.Evidence (HsWrapper(WpHole))
-import GHC.Types.Basic (SourceText(NoSourceText))
+import GHC.Types.SourceText (SourceText(NoSourceText))
 import GHC.Types.Name.Cache (NameCache(nsUniqs))
-import GHC.Utils.Error (Severity(SevError, SevWarning), mkErrMsg, mkWarnMsg)
+import GHC.Utils.Error (Severity(SevError, SevWarning), mkMsgEnvelope, mkWarnMsg)
+import qualified GHC.Utils.Logger (putLogMsg)
 
 import qualified GHC.Hs      as GHC
 import qualified GHC.Plugins as GHC
-
-#endif
 
 {-------------------------------------------------------------------------------
   Miscellaneous
@@ -159,7 +127,7 @@ putLogMsg :: DynFlags -> WarnReason -> Severity -> SrcSpan -> SDoc -> IO ()
 putLogMsg flags reason sev srcspan =
     GHC.putLogMsg flags reason sev srcspan (defaultErrStyle flags)
 #else
-putLogMsg = GHC.putLogMsg
+putLogMsg = GHC.Utils.Logger.putLogMsg
 #endif
 
 {-------------------------------------------------------------------------------
